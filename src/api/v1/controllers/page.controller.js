@@ -588,7 +588,8 @@ module.exports.handleGetNotifications = async (req, res) => {
           model: User, 
           attributes: ["UserID", "Username", "ProfilePictureURL"], 
         }
-      ]
+      ],
+      order: [["CreatedAt", "DESC"]],
     });
 
     const countNotifications = await Notification.count({
@@ -682,3 +683,47 @@ module.exports.getAllStories = async (req, res) => {
   }
 };
 
+module.exports.getAllVideos = async (req, res) => {
+  try {
+    const posts = await Post.findAll({
+      where: {
+        PostType: "video"
+      },
+      include: [
+        {
+          model: User,
+          attributes: ["UserID", "Username", "ProfilePictureURL"],
+        },
+        {
+          model: Comment,
+          include: [
+            {
+              model: User,
+              attributes: ["UserID", "Username", "ProfilePictureURL"],
+            },
+            {
+              model: Reply,
+              include: [
+                {
+                  model: User,
+                  attributes: ["UserID", "Username", "ProfilePictureURL"],
+                },
+              ],
+            },
+            { 
+              model: CommentLike,
+            }
+          ],
+        },
+        {
+          model: Like,
+          attributes: ["UserID"],
+        },
+      ],
+      order: [["CreatedAt", "DESC"]],
+    });
+    res.status(200).json(posts);
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+};

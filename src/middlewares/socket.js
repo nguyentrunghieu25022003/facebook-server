@@ -17,7 +17,6 @@ const initSocket = (server) => {
     socket.on("joinRoom", ({ callerUserId }) => {
       const roomName = `user_${callerUserId}`;
       socket.join(roomName);
-      console.log(`User ${callerUserId} joined room ${roomName}`);
     });
 
     socket.on("typing", (data) => {
@@ -25,15 +24,8 @@ const initSocket = (server) => {
     });
 
     socket.on("sendMessage", (message) => {
-      socket.to(`user_${message.ReceiverID}`).emit("newMessage", message);
+      io.to(`user_${message.ReceiverID}`).emit("newMessage", message);
       socket.emit("newMessage", message);
-    });
-
-    socket.on("readStatus", (data) => {
-      const { userId } = data;
-      const roomName = `user_${userId}`;
-      console.log(`User ${userId} read status ${roomName}`);
-      socket.to(roomName).emit("readStatus", data);
     });
 
     socket.on("user:call", ({ fromUserId, toUserId, offer }) => {

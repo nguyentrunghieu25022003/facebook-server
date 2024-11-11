@@ -22,5 +22,6 @@ router.get("/:userId/all-post", controller.handleGetAllMyPost);
 router.get("/friends/suggested/:userId", controller.handleGetFriendListSuggested);
 router.get("/notifications/:userId", controller.handleGetNotifications);
 router.get("/stories/:userId", controller.getAllStories);
+router.get("/videos/all", controller.getAllVideos);
 
 module.exports = router;

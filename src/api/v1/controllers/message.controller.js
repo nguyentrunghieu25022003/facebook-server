@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const { Message } = require("../../../models/index.model");
+const { sequelize } = require("../../../../config/index");
 
 module.exports.getMessages = async (req, res) => {
   try {
@@ -27,7 +28,7 @@ module.exports.getUnreadMessages = async (req, res) => {
     const { userId } = req.params;
     const messages = await Message.findAll({
       where: {
-        ReceiverID: userId,
+        ReceiverID: parseInt(userId),
         IsRead: false
       },
     });
@@ -38,6 +39,7 @@ module.exports.getUnreadMessages = async (req, res) => {
 };
 
 module.exports.sendMessage = async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const { senderId, receiverId } = req.params;
     const { Content } = req.body;
@@ -62,18 +64,22 @@ module.exports.sendMessage = async (req, res) => {
       MessageType: "text",
       CreatedAt: Date.now(),
       IsRead: false
-    });
+    }, { transaction });
 
     const io = req.app.get("socketio");
     io.to(`user_${receiverId}`).emit("newMessage", newMessage);
+    io.to(`user_${receiverId}`).emit("countMessages", { message: "+1" });
+    await transaction.commit();
 
     res.status(200).json({ message: "Message sent successfully", newMessage: newMessage });
   } catch (err) {
+    await transaction.rollback();
     res.status(500).send("Error: " + err.message);
   }
 };
 
 module.exports.readMessage = async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const senderId = parseInt(req.params.senderId);
     const receiverId = parseInt(req.params.receiverId);
@@ -90,15 +96,19 @@ module.exports.readMessage = async (req, res) => {
         SenderID: receiverId,
         ReceiverID: senderId,
         IsRead: false
-      }
+      },
+      transaction
     });
 
     const io = req.app.get("socketio");
     io.to(`user_${senderId}`).emit("messageRead", { senderId, receiverId });
     io.to(`user_${receiverId}`).emit("messageRead", { senderId, receiverId });
+    io.to(`user_${senderId}`).emit("countMessages", { message: "-1" });
+    await transaction.commit();
+
     res.status(200).json({ message: "Messages marked as read" });
   } catch (err) {
+    await transaction.rollback();
     res.status(500).send("Error: " + err.message);
   }
 };
-
