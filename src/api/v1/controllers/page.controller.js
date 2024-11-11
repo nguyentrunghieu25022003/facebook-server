@@ -727,3 +727,19 @@ module.exports.getAllVideos = async (req, res) => {
     res.status(500).send("Error: " + err.message);
   }
 };
+
+module.exports.handleSearchUser = async (req, res) => {
+  try {
+    const { Username } = req.body;
+    const users = await User.findAll({
+      where: {
+        Username: {
+          [Op.like]: `%${Username.toLowerCase()}%`
+        }
+      }
+    });
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+};

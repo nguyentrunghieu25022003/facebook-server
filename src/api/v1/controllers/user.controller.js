@@ -21,6 +21,7 @@ module.exports.handleSignUp = async (req, res) => {
       ProfilePictureURL: "default",
       Bio: "default",
       PrivacySettings: "public",
+      LastLogin: new Date(),
     });
     res.status(200).json({ message: "Success !" });
   } catch (err) {
