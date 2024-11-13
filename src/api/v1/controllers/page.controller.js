@@ -1,4 +1,4 @@
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 const { sequelize } = require("../../../../config/index");
 const {
   User,
@@ -386,8 +386,8 @@ module.exports.handleReplyComment = async (req, res) => {
     const CommentID = parseInt(req.params.commentId);
     const UserID = parseInt(req.body.userId);
     const Content = req.body.content;
-    const FileURL = req.file ? req.file.filename : null;
-    const fileType = req.file.mimetype.split("/")[0];
+    const FileURL = req?.file ? req?.file?.filename : null;
+    const fileType = req?.file?.mimetype.split("/")[0];
     let ImageURL = null;
     let VideoURL = null;
     
@@ -739,6 +739,80 @@ module.exports.handleSearchUser = async (req, res) => {
       }
     });
     res.status(200).json(users);
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+};
+
+module.exports.handleRequest = async (req, res) => {
+  try {
+    const { requesterId, responderId } = req.params;
+    await Friendship.create({
+      RequesterID: parseInt(requesterId),
+      ResponderID: parseInt(responderId)
+    });
+    res.status(200).json({ message: "Requested !" });
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+};
+
+module.exports.handleAcceptRequest = async (req, res) => {
+  try {
+    const { friendShipId } = req.params;
+    await Friendship.update(
+      { FriendshipStatus: "accepted" },
+      { where: { FriendshipID: parseInt(friendShipId) } }
+    );
+    res.status(200).json({ message: "Accepted !" });
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+};
+
+module.exports.getPostDetail = async (req, res) => {
+  try {
+    const postId = parseInt(req.params.postId);
+
+    const post = await Post.findAll({
+      where: {
+        PostID: postId
+      },
+      include: [
+        {
+          model: User,
+          attributes: ["UserID", "Username", "ProfilePictureURL"],
+        },
+        {
+          model: Comment,
+          include: [
+            {
+              model: User,
+              attributes: ["UserID", "Username", "ProfilePictureURL"],
+            },
+            {
+              model: Reply,
+              include: [
+                {
+                  model: User,
+                  attributes: ["UserID", "Username", "ProfilePictureURL"],
+                },
+              ],
+            },
+            { 
+              model: CommentLike,
+            }
+          ],
+        },
+        {
+          model: Like,
+          attributes: ["UserID"],
+        },
+      ],
+      order: [["CreatedAt", "DESC"]],
+    });
+
+    res.status(200).json(post);
   } catch (err) {
     res.status(500).send("Error: " + err.message);
   }

@@ -1,5 +1,6 @@
 const socket = require("socket.io");
 const corsHelper = require("../helper/cors");
+const { getMinutesAgo } = require("../helper/getMinutesAgo");
 
 const initSocket = (server) => {
   const io = socket(server, {
@@ -11,12 +12,20 @@ const initSocket = (server) => {
     }
   });
 
+  const onlineUsers = new Map();
+
   io.on("connection", (socket) => {
     console.log("User connected...");
     
     socket.on("joinRoom", ({ callerUserId }) => {
       const roomName = `user_${callerUserId}`;
+      onlineUsers.set(callerUserId, socket.id);
+      io.emit("friend:status", { userId: callerUserId, userStatus: "Online" });
       socket.join(roomName);
+    });
+
+    socket.on("user:action", ({ userId, userStatus }) => {
+      io.emit("friend:status", { userId, userStatus });
     });
 
     socket.on("typing", (data) => {
@@ -50,6 +59,12 @@ const initSocket = (server) => {
     
     socket.on("disconnect", () => {
       console.log("User disconnected...");
+      const userId = [...onlineUsers].find(([key, value]) => value === socket.id)?.[0];
+      if (userId) {
+        const lastSeen = Date.now();
+        onlineUsers.delete(userId);
+        io.emit("friend:status", { userId: userId, userStatus: `Accessed ${getMinutesAgo(lastSeen)} minutes ago` });
+      }
     });
   });
 

@@ -24,5 +24,7 @@ router.get("/notifications/:userId", controller.handleGetNotifications);
 router.get("/stories/:userId", controller.getAllStories);
 router.get("/videos/all", controller.getAllVideos);
 router.post("/search", controller.handleSearchUser);
+router.get("/accepted/:friendShipId", controller.handleAcceptRequest);
+router.get("/post/detail/:postId", authenticate, controller.getPostDetail);
 
 module.exports = router;
