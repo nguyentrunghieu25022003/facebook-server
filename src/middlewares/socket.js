@@ -15,10 +15,10 @@ const initSocket = (server) => {
   const onlineUsers = new Map();
 
   io.on("connection", (socket) => {
-    console.log("User connected...");
+    console.log("User connected...", socket.id);
 
     socket.emit("me", socket.id);
-    
+
     socket.on("joinRoom", ({ callerUserId }) => {
       const roomName = `user_${callerUserId}`;
       onlineUsers.set(callerUserId, socket.id);
