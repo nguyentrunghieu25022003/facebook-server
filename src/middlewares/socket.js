@@ -16,6 +16,8 @@ const initSocket = (server) => {
 
   io.on("connection", (socket) => {
     console.log("User connected...");
+
+    socket.emit("me", socket.id);
     
     socket.on("joinRoom", ({ callerUserId }) => {
       const roomName = `user_${callerUserId}`;
@@ -37,25 +39,13 @@ const initSocket = (server) => {
       socket.emit("newMessage", message);
     });
 
-    socket.on("user:call", ({ fromUserId, toUserId, offer }) => {
-      const roomName = `user_${toUserId}`;
-      io.to(roomName).emit("incoming:call", { fromUserId, offer });
-    });
+    socket.on("callUser", (data) => {
+      io.to(data.userToCall).emit("callUser", { signal: data.signalData, from: data.from, name: data.name })
+    })
   
-    socket.on("call:accepted", ({ fromUserId, toUserId, answer }) => {
-      const roomName = `user_${fromUserId}`;
-      io.to(roomName).emit("call:accepted", { fromUserId, answer });
-    });
-  
-    socket.on("peer:nego:needed", ({ fromUserId, toUserId, offer }) => {
-      const roomName = `user_${toUserId}`;
-      io.to(roomName).emit("peer:nego:needed", { fromUserId, offer });
-    });
-  
-    socket.on("peer:nego:done", ({ fromUserId, toUserId, answer }) => {
-      const roomName = `user_${fromUserId}`;
-      io.to(roomName).emit("peer:nego:final", { fromUserId, answer });
-    });
+    socket.on("answerCall", (data) => {
+      io.to(data.to).emit("callAccepted", data.signal)
+    })
     
     socket.on("disconnect", () => {
       console.log("User disconnected...");
