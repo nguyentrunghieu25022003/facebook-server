@@ -40,10 +40,12 @@ const initSocket = (server) => {
     });
 
     socket.on("callUser", (data) => {
+      console.log("Caller", data);
       io.to(data.userToCall).emit("callUser", { signal: data.signalData, from: data.from, name: data.name })
     })
   
     socket.on("answerCall", (data) => {
+      console.log("Answer", data);
       io.to(data.to).emit("callAccepted", data.signal)
     })
     
