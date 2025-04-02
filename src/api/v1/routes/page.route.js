@@ -26,5 +26,8 @@ router.get("/videos/all", controller.getAllVideos);
 router.post("/search", controller.handleSearchUser);
 router.get("/accepted/:friendShipId", controller.handleAcceptRequest);
 router.get("/post/detail/:postId", authenticate, controller.getPostDetail);
+router.get("/unfriend/all/:userId", controller.getFriendListUnfriended);
+router.get("/request/:userId/:friendId", controller.handleRequestToUser);
+router.post("/story/create", upload.single("FileURL"), authenticate, controller.handleCreateStory);
 
 module.exports = router;

@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 
 const controller = require("../controllers/user.controller");
-const authenticate = require("../../../middlewares/authenticate");
 const upload = require("../../../middlewares/multer");
 
 router.post("/auth/sign-up", controller.handleSignUp);

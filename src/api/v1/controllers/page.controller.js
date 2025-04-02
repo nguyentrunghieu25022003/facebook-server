@@ -1,4 +1,4 @@
-const { Op, where } = require("sequelize");
+const { Op } = require("sequelize");
 const { sequelize } = require("../../../../config/index");
 const {
   User,
@@ -71,7 +71,36 @@ module.exports.getAllDataHomepage = async (req, res) => {
       order: [["CreatedAt", "DESC"]],
     });
 
-    res.status(200).json(posts);
+    const stories = await User.findOne({
+      where: {
+        UserID: userId,
+      },
+      attributes: ["UserID", "Username", "ProfilePictureURL"],
+      include: [
+        {
+          model: Story
+        },
+        {
+          model: User,
+          as: "RequestedFriends",
+          attributes: ["UserID", "Username", "ProfilePictureURL"],
+          through: {
+            model: Friendship,
+            where: {
+              FriendshipStatus: "accepted",
+            },
+            attributes: [],
+          },
+          include: [
+            {
+              model: Story,
+            },
+          ],
+        },
+      ],
+    });
+
+    res.status(200).json({ posts, stories });
   } catch (err) {
     res.status(500).send("Error: " + err.message);
   }
@@ -813,6 +842,87 @@ module.exports.getPostDetail = async (req, res) => {
     });
 
     res.status(200).json(post);
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+};
+
+module.exports.getFriendListUnfriended = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+
+    const friendships = await Friendship.findAll({
+      attributes: ["RequesterID", "ResponderID"],
+    });
+
+    const userIds = [];
+    friendships.forEach(friend => {
+      if (friend.RequesterID === userId) {
+        userIds.push(friend.ResponderID);
+      } else if (friend.ResponderID === userId) {
+        userIds.push(friend.RequesterID);
+      }
+    });
+
+    const users = await User.findAll({
+      attributes: ["UserID", "Username", "ProfilePictureURL"],
+      where: userIds.length > 0 ? {
+        UserID: { [Op.notIn]: userIds }
+      } : {}
+    });
+
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+};
+
+module.exports.handleRequestToUser = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const friendId = parseInt(req.params.friendId);
+
+    await Friendship.create({
+      RequesterID: userId,
+      ResponderID: friendId,
+    });
+
+    res.status(200).json({ message: "Success !" });
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+};
+
+module.exports.handleCreateStory = async (req, res) => {
+  try {
+    const { UserID, Content } = req.body;
+    const FileURL = req?.file ? req?.file.filename : null;
+    const fileType = req?.file?.mimetype.split("/")[0];
+    let ImageURL = null;
+    let VideoURL = null;
+    
+    if (fileType === "image") {
+      ImageURL = `/uploads/${FileURL}`;
+    } else if (fileType === "video") {
+      VideoURL = `/uploads/${FileURL}`;
+    }
+
+    const user = await User.findByPk(UserID, {
+      attributes: ["UserID", "Username", "ProfilePictureURL"],
+    });
+
+    if (!user) {
+      return res.status(404).send("User not found !");
+    }
+
+    await Story.create({
+      UserID: parseInt(UserID),
+      Content: Content,
+      ImageURL: ImageURL,
+      VideoURL: VideoURL,
+    });
+
+    res.status(200).send({ message: "Success !" });
   } catch (err) {
     res.status(500).send("Error: " + err.message);
   }
